@@ -11,7 +11,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Serve static uploads
-app.use('/uploads', express.static(path.join(__dirname, '../Fe/public/uploads')));
+app.use('/uploads', express.static(path.join(__dirname, '../GirlStyleFe/public/uploads')));
 
 // Connect Database
 connectDB();
@@ -29,6 +29,8 @@ app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/vouchers', require('./routes/voucherRoutes'));
 app.use('/api/mix-match', require('./routes/mixMatchRoutes'));
 app.use('/api/blogs', require('./routes/blogRoutes'));
+app.use('/api/analytics', require('./routes/analyticsRoutes'));
+app.use('/api/address', require('./routes/addressRoutes'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

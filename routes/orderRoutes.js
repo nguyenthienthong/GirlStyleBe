@@ -38,14 +38,32 @@ router.post('/', async (req, res) => {
       createdAt: new Date().toISOString()
     };
 
+    // Push notification for Admin CMS
+    if (!mockStore.notifications) mockStore.notifications = [];
+    const notif = {
+      _id: 'notif_' + Date.now(),
+      title: '🛒 Đơn hàng mới!',
+      message: `Khách hàng ${customerInfo?.name || 'Khách'} (${customerInfo?.phone}) vừa đặt đơn #${orderCode} - ${finalAmount.toLocaleString('vi-VN')}đ`,
+      orderCode,
+      customerName: customerInfo?.name || 'Khách',
+      phone: customerInfo?.phone || '',
+      amount: finalAmount,
+      isRead: false,
+      createdAt: new Date().toISOString()
+    };
+    mockStore.notifications.unshift(notif);
+    console.log(`[EMAIL NOTIFICATION TO ADMIN admin@girlstyle.vn] 📩 Subject: [GIRLSTYLE] Đơn hàng mới #${orderCode} từ ${customerInfo?.name}`);
+
     if (!isDbConnected()) {
       mockStore.orders.unshift(orderData);
-      return res.status(201).json({ success: true, order: orderData });
+      const { saveStoreToFile } = require('../config/db');
+      saveStoreToFile();
+      return res.status(201).json({ success: true, order: orderData, notification: notif });
     }
 
     const order = new Order(orderData);
     await order.save();
-    res.status(201).json({ success: true, order });
+    res.status(201).json({ success: true, order, notification: notif });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -114,6 +132,29 @@ router.put('/:id/status', async (req, res) => {
     }
     const order = await Order.findByIdAndUpdate(req.params.id, { status, paymentStatus }, { new: true });
     res.json({ success: true, order });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.get('/notifications/all', async (req, res) => {
+  try {
+    const list = mockStore.notifications || [];
+    const unreadCount = list.filter(n => !n.isRead).length;
+    res.json({ success: true, count: list.length, unreadCount, notifications: list });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/notifications/mark-read', async (req, res) => {
+  try {
+    if (mockStore.notifications) {
+      mockStore.notifications.forEach(n => { n.isRead = true; });
+      const { saveStoreToFile } = require('../config/db');
+      saveStoreToFile();
+    }
+    res.json({ success: true, message: 'Đã đánh dấu đọc tất cả thông báo' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

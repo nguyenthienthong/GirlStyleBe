@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const connectDB = require('./config/db');
 
 const app = express();
@@ -10,8 +11,20 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Serve static uploads
-app.use('/uploads', express.static(path.join(__dirname, '../GirlStyleFe/public/uploads')));
+// Determine exact target upload folder for static serving
+const getTargetUploadDir = () => {
+  const fePath = path.resolve(__dirname, '../Fe/public/uploads');
+  const repoPath = path.resolve(__dirname, '../GirlStyleFe/public/uploads');
+
+  if (fs.existsSync(fePath)) return fePath;
+  if (fs.existsSync(repoPath)) return repoPath;
+  if (!fs.existsSync(fePath)) fs.mkdirSync(fePath, { recursive: true });
+  return fePath;
+};
+
+const feUploadPath = getTargetUploadDir();
+console.log(`[GirlStyle BE] Static uploads serving from: ${feUploadPath}`);
+app.use('/uploads', express.static(feUploadPath));
 
 // Connect Database
 connectDB();
